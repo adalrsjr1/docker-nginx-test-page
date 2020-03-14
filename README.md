@@ -6,11 +6,11 @@ Smallest possible Nginx (OpenResty) image for testing load-balancing inside Dock
 # Preview
 
 ```bash
->> curl localhost
+>> curl -G localhost
 HOSTNAME=ef25379f3352
 IP=12.122.122.12
 
->> curl localhost/recurse?count=5
+>> curl -G --data-urlencode 'count=5' localhost/recurse
 12.122.122.12    04ac8923b523    Count 5
 12.122.122.12    04ac8923b523    Count 4
 12.122.122.12    04ac8923b523    Count 3
@@ -22,7 +22,7 @@ IP=12.122.122.12
 # when we want to test load-balancing on a cluster:
 # first, deploy this image with multiple replicas as a service, e.g. "nginx-test"
 # second, make recurse request passing hostname as a target
->> curl 'cluster-ip/recurse?count=5&host=nginx-test/recurse'
+>> curl -G --data-urlencode 'count=5' --data-urlencode 'host=nginx-test/recurse' 'cluster-ip/recurse'
 12.122.122.15    f8f0e76d6e78    Count 5
 12.122.122.12    04ac8923b523    Count 4
 12.122.122.15    f8f0e76d6e78    Count 3
@@ -52,7 +52,7 @@ IP=12.122.122.12
 
 # You can try to restart container multiple times, you will always get proper containerID and public IP address.
 # Not let's recurse
->> curl localhost/recurse?count=100
+>> curl -G --data-urlencode 'count=100' localhost/recurse
 12.122.122.12    04ac8923b523    Count 100
 12.122.122.12    04ac8923b523    Count 99
 12.122.122.12    04ac8923b523    Count 98
@@ -74,7 +74,7 @@ Example using scaling in `docker-compose`:
 
 # in another terminal (we're using docker-compose run, because we can't scale services with open ports)
 # notice different container IDs
->> docker-compose run --rm nginx-test curl 'nginx-test:80/recurse?count=100&host=nginx-test/recurse'
+>> docker-compose run --rm nginx-test curl -G --data-urlencode 'count=100' --data-urlencode 'host=ngnix-test/recurse' nginx-test:80/recurse'
 12.122.122.12    04ac8923b523    Count 100
 12.122.122.12    2ca5192d79d9    Count 99
 12.122.122.12    04ac8923b523    Count 98
@@ -84,7 +84,11 @@ Example using scaling in `docker-compose`:
 12.122.122.12    c2be082a760c    Count 0
 ```
 
-You can do pretty the same on a `Docker Swarm` or a `Kubernetes` cluster, to easily generate thousands of requests across containers. For example, each request to `recurse?count=100` generates 100 requests between containers.
+You can do pretty the same on a `Docker Swarm` or a `Kubernetes` cluster, to easily generate thousands of requests across containers. For example, each request to `recurse?count=100` generates 100 requests between containers. When using on `Kubernetes` the query parameter `host` should point to server name as following:
+
+```
+host=<service name>.<namespace>.svc.cluster.local/recurse
+```
 
 # Implementation
 
